@@ -1,19 +1,14 @@
 
 #include "Chessboard.hpp"
 
-namespace ChessV2 {
+#include "ResourceManager.hpp"
 
+namespace ChessV2 {
+void Chessboard::readFen() {
+    this->readFen(this->m_startingPos);
+}
 void Chessboard::readFen(const std::string& fen) {
     Logger log(LogLevel::DEBUG);
-
-    std::unordered_map<char, PieceType> fenPieceTypeMap = {
-        {'P', PieceType::whitePawn},   {'R', PieceType::whiteRook},
-        {'N', PieceType::whiteKnight}, {'B', PieceType::whiteBishop},
-        {'Q', PieceType::whiteQueen},  {'K', PieceType::whiteKing},
-        {'p', PieceType::blackPawn},   {'r', PieceType::blackRook},
-        {'n', PieceType::blackKnight}, {'b', PieceType::blackBishop},
-        {'q', PieceType::blackQueen},  {'k', PieceType::blackKing},
-    };
 
     int offset = 0, currBit = 63;
 
@@ -43,8 +38,8 @@ void Chessboard::readFen(const std::string& fen) {
             case 'q':
             case 'k':
                 this->m_blackBoard |= this->m_64BitOne << currBit;
-                this->m_pieces[static_cast<int>(fenPieceTypeMap.at(fenChar))] |=
-                    this->m_64BitOne << currBit;
+                this->m_pieces[static_cast<int>(this->fenPieceTypeMap.at(
+                    fenChar))] |= this->m_64BitOne << currBit;
                 currBit--;
                 break;
 
@@ -55,8 +50,8 @@ void Chessboard::readFen(const std::string& fen) {
             case 'Q':
             case 'K':
                 this->m_whiteBoard |= this->m_64BitOne << currBit;
-                this->m_pieces[static_cast<int>(fenPieceTypeMap.at(fenChar))] |=
-                    this->m_64BitOne << currBit;
+                this->m_pieces[static_cast<int>(this->fenPieceTypeMap.at(
+                    fenChar))] |= this->m_64BitOne << currBit;
                 currBit--;
                 break;
             default:
@@ -69,20 +64,50 @@ void Chessboard::readFen(const std::string& fen) {
     if (currBit != -1) {
         log.error("FEN Failure: Converted fen is not of length 64");
     }
+}
 
-    /*
-    // test bit sets
-    uint64_t result = m_pieces[0];
-    for (int i = 1; i < 14; i++) {
-        result |= this->m_pieces[i];
-    }
-    if (result != this->m_wholeBoard) {
-        log.error("Bits don't tally up");
-    }
+void Chessboard::drawBoard(sf::RenderWindow& window) {
+    for (int y = 0; y < this->m_rows; y++) {
+        for (int x = 0; x < this->m_columns; x++) {
+            sf::Vector2f position = sf::Vector2f(float(x * this->m_cellWidth),
+                                                 float(y * this->m_cellHeight));
+            sf::RectangleShape square(
+                sf::Vector2f(this->m_cellWidth, this->m_cellHeight));
+            square.setPosition(position);
 
-    log.bitout(this->m_wholeBoard);
-    log.bitout(this->m_blackBoard);
-    log.bitout(this->m_whiteBoard);
-    */
+            if ((x + y) % 2 == 0) {
+                square.setFillColor(this->m_whiteSqColor);
+            } else {
+                square.setFillColor(this->m_blackSqColor);
+            }
+            window.draw(square);
+        }
+    }
+}
+
+void Chessboard::drawPieces(sf::RenderWindow& window) {
+    std::string texturePath;
+    for (auto [fenChar, type] : this->fenPieceTypeMap) {
+        uint64_t bb = this->m_pieces[(int)type];
+        std::bitset<64> bits(bb);
+        for (int i = 0; i < bits.size(); i++) {
+            if (bits[i]) {
+                getTexturePath(type, &texturePath);
+
+                int x = 7 - (i % 8);
+                int y = 7 - int(i / 8);
+                sf::Sprite sprite;
+                sf::Vector2f position =
+                    sf::Vector2f(float(x * this->m_cellWidth),
+                                 float(y * this->m_cellHeight));
+                sprite.setPosition(position);
+
+                sf::Texture texture;
+                texture.loadFromFile(texturePath);
+                sprite.setTexture(texture);
+                window.draw(sprite);
+            }
+        }
+    }
 }
 };  // namespace ChessV2
