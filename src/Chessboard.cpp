@@ -70,6 +70,7 @@ void Chessboard::readFen(const std::string& fen) {
         log.error("FEN Failure: Converted fen is not of length 64");
     }
 
+    /*
     // test bit sets
     uint64_t result = m_pieces[0];
     for (int i = 1; i < 14; i++) {
@@ -82,5 +83,6 @@ void Chessboard::readFen(const std::string& fen) {
     log.bitout(this->m_wholeBoard);
     log.bitout(this->m_blackBoard);
     log.bitout(this->m_whiteBoard);
+    */
 }
 };  // namespace ChessV2
